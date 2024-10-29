@@ -1,0 +1,27 @@
+{
+	"geode": "3.8.1",
+	"gd": {
+		"win": "2.206",
+		"android": "2.206",
+		"mac": "2.206",
+		"ios": "2.206"
+	},
+	"id": "alphalaneous.fine_outline",
+	"name": "Fine Outline",
+	"version": "v1.0.0",
+	"developer": "Alphalaneous",
+	"description": "Change the black outline color of icons!",
+	"dependencies": [
+        {
+            "id": "geode.node-ids",
+            "version": ">=v1.15.0",
+            "importance": "required"
+        }
+    ],
+	"links": {
+        "homepage": "https://twitter.com/alphalaneous",
+        "source": "https://github.com/Alphalaneous/FineOutline",
+        "community": "https://discord.gg/Txn2CA5dHF"
+    },
+	"tags": ["enhancement", "customization"]
+}
