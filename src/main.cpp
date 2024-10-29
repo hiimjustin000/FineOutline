@@ -150,8 +150,6 @@ class $modify(MySimplePlayer, SimplePlayer) {
 	}
 };
 
-
-
 class $modify(MyPlayerObject, PlayerObject) {
 
 	void updatePlayerShaders() {
@@ -211,18 +209,15 @@ class $modify(MyPlayerObject, PlayerObject) {
 		}
 	}
 
-	
-
     void playerDestroyed(bool p0) {
 		PlayerObject::playerDestroyed(p0);
 		setOutlineSpriteOpacity(0);
 	}
 
-    void playSpawnEffect() {
+    /*void playSpawnEffect() {
 		PlayerObject::playSpawnEffect();
 		setOutlineSpriteOpacity(255);
-	}
-
+	}*/
 
 	bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool highGraphics) {
 		if (!PlayerObject::init(player, ship, gameLayer, layer, highGraphics)) return false;
