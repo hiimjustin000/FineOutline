@@ -315,7 +315,7 @@ class $modify(MyPlayLayer, PlayLayer) {
 		if (m_player2) static_cast<MyPlayerObject*>(m_player2)->setOutlineSpriteOpacity(0);
 	}
 
-	void levelComplete() {
+	/*void levelComplete() {
 		PlayLayer::levelComplete();
 		if (m_player1) static_cast<MyPlayerObject*>(m_player1)->setOutlineSpriteOpacity(0);
 		if (m_player2) static_cast<MyPlayerObject*>(m_player2)->setOutlineSpriteOpacity(0);
@@ -325,7 +325,7 @@ class $modify(MyPlayLayer, PlayLayer) {
 		PlayLayer::resetLevel();
 		if (m_player1) static_cast<MyPlayerObject*>(m_player1)->setOutlineSpriteOpacity(255);
 		if (m_player2) static_cast<MyPlayerObject*>(m_player2)->setOutlineSpriteOpacity(255);
-	}
+	}*/
 
 	void checkGlobed(float dt) {
 		if (CCNode* wrapper = m_progressBar->getChildByID("dankmeme.globed2/progress-bar-wrapper")) {
