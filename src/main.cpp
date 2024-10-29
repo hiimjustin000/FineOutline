@@ -214,10 +214,10 @@ class $modify(MyPlayerObject, PlayerObject) {
 		setOutlineSpriteOpacity(0);
 	}
 
-    /*void playSpawnEffect() {
+    void playSpawnEffect() {
 		PlayerObject::playSpawnEffect();
 		setOutlineSpriteOpacity(255);
-	}*/
+	}
 
 	bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool highGraphics) {
 		if (!PlayerObject::init(player, ship, gameLayer, layer, highGraphics)) return false;
@@ -309,23 +309,23 @@ class $modify(MyPlayLayer, PlayLayer) {
 		return true;
 	}
 
-    /*void showCompleteEffect() {
+    void showCompleteEffect() {
 		PlayLayer::showCompleteEffect();
-		static_cast<MyPlayerObject*>(m_player1)->setOutlineSpriteOpacity(0);
-		static_cast<MyPlayerObject*>(m_player2)->setOutlineSpriteOpacity(0);
+		if (m_player1) static_cast<MyPlayerObject*>(m_player1)->setOutlineSpriteOpacity(0);
+		if (m_player2) static_cast<MyPlayerObject*>(m_player2)->setOutlineSpriteOpacity(0);
 	}
 
 	void levelComplete() {
 		PlayLayer::levelComplete();
-		static_cast<MyPlayerObject*>(m_player1)->setOutlineSpriteOpacity(0);
-		static_cast<MyPlayerObject*>(m_player2)->setOutlineSpriteOpacity(0);
+		if (m_player1) static_cast<MyPlayerObject*>(m_player1)->setOutlineSpriteOpacity(0);
+		if (m_player2) static_cast<MyPlayerObject*>(m_player2)->setOutlineSpriteOpacity(0);
 	}
 
     void resetLevel() {
 		PlayLayer::resetLevel();
-		static_cast<MyPlayerObject*>(m_player1)->setOutlineSpriteOpacity(255);
-		static_cast<MyPlayerObject*>(m_player2)->setOutlineSpriteOpacity(255);
-	}*/
+		if (m_player1) static_cast<MyPlayerObject*>(m_player1)->setOutlineSpriteOpacity(255);
+		if (m_player2) static_cast<MyPlayerObject*>(m_player2)->setOutlineSpriteOpacity(255);
+	}
 
 	void checkGlobed(float dt) {
 		if (CCNode* wrapper = m_progressBar->getChildByID("dankmeme.globed2/progress-bar-wrapper")) {
