@@ -309,7 +309,7 @@ class $modify(MyPlayLayer, PlayLayer) {
 		return true;
 	}
 
-    void showCompleteEffect() {
+    /*void showCompleteEffect() {
 		PlayLayer::showCompleteEffect();
 		static_cast<MyPlayerObject*>(m_player1)->setOutlineSpriteOpacity(0);
 		static_cast<MyPlayerObject*>(m_player2)->setOutlineSpriteOpacity(0);
@@ -325,7 +325,7 @@ class $modify(MyPlayLayer, PlayLayer) {
 		PlayLayer::resetLevel();
 		static_cast<MyPlayerObject*>(m_player1)->setOutlineSpriteOpacity(255);
 		static_cast<MyPlayerObject*>(m_player2)->setOutlineSpriteOpacity(255);
-	}
+	}*/
 
 	void checkGlobed(float dt) {
 		if (CCNode* wrapper = m_progressBar->getChildByID("dankmeme.globed2/progress-bar-wrapper")) {
@@ -449,6 +449,9 @@ class $modify(MyCharacterColorPage, CharacterColorPage) {
 
 			m_fields->m_outlineColorBtn->setPosition({m_glowToggler->getPosition().x + 74, m_glowToggler->getPosition().y});
 			buttonsMenu->addChild(m_fields->m_outlineColorBtn);
+			if (CCMenuItemSpriteExtra* closeButton = typeinfo_cast<CCMenuItemSpriteExtra*>(buttonsMenu->getChildByID("close-button"))) {
+				closeButton->m_pfnSelector = menu_selector(MyCharacterColorPage::onCloseH);
+			}
 		}
 		
 		return true;
@@ -488,12 +491,14 @@ class $modify(MyCharacterColorPage, CharacterColorPage) {
 		}
 	}
 
+	#ifndef GEODE_IS_ANDROID
     void keyBackClicked() {
 		CharacterColorPage::keyBackClicked();
 		setColorOnGarage();
 	}
+	#endif
 
-    void onClose(CCObject* sender) {
+    void onCloseH(CCObject* sender) {
 		CharacterColorPage::onClose(sender);
 		setColorOnGarage();
 	}
