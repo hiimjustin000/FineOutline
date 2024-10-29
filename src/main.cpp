@@ -73,7 +73,6 @@ void updateSprite(CCSprite* spr, ccColor3B color = {0, 0, 0}) {
 	CCSprite* blackOutline = CCSprite::createWithSpriteFrame(spr->displayFrame());
 
 	blackOutline->setContentSize(spr->getContentSize());
-	blackOutline->setZOrder(2);
 	blackOutline->setID("black_outline"_spr);
 	blackOutline->setPosition(spr->getContentSize()/2);
 	blackOutline->setColor(color);
@@ -130,7 +129,6 @@ class $modify(MySimplePlayer, SimplePlayer) {
 	void setOutlineColor(const ccColor3B& color) {
 
 		if (color == ccColor3B{0, 0, 0}) {
-			log::info("here");
 			removeAllShaders();
 			return;
 		}
