@@ -2,6 +2,7 @@
 #include <Geode/modify/SimplePlayer.hpp>
 #include <Geode/modify/PlayerObject.hpp>
 #include <Geode/modify/PlayLayer.hpp>
+#include <Geode/modify/LevelEditorLayer.hpp>
 #include <Geode/modify/ProfilePage.hpp>
 #include <Geode/modify/CharacterColorPage.hpp>
 #include <Geode/modify/GJGarageLayer.hpp>
@@ -24,8 +25,9 @@ $on_mod(Loaded) {
 		void main() {
 			vec4 c = texture2D(CC_Texture0, v_texCoord);
 			float br = max(max(c.r, c.g), c.b);
+			float gr = float(abs(c.r - c.g) < 0.25 && abs(c.g - c.b) < 0.25);
 
-			c.rgb = mix(c.rgb, vec3(1.0), float(br < 1.0 && c.a > 0.0));
+			c.rgb = mix(c.rgb, vec3(1.0), float(br < 1.0 && c.a > 0.0 && gr > 0.0));
 
 			gl_FragColor = v_fragmentColor * c;
 		}
@@ -45,8 +47,9 @@ $on_mod(Loaded) {
 		void main() {
 			vec4 c = texture2D(CC_Texture0, v_texCoord);
 			float br = max(max(c.r, c.g), c.b);
+			float gr = float(abs(c.r - c.g) < 0.25 && abs(c.g - c.b) < 0.25);
 
-			float condition = float(br < 1.0 && c.a > 0.0);
+			float condition = float(br < 1.0 && c.a > 0.0 && gr > 0.0);
 			c.a = mix(0.0, c.a * (1.0 - br), condition);
 			c.rgb = mix(c.rgb, vec3(1.0), condition);
 
@@ -57,8 +60,16 @@ $on_mod(Loaded) {
 	ShaderCache::get()->createShader("outline", fragOutline);
 };
 
+void removeShaders(CCSprite* spr) {
+	spr->setShaderProgram(CCShaderCache::sharedShaderCache()->programForKey(kCCShader_PositionTextureColor));
+	spr->getShaderProgram()->setUniformsForBuiltins();
+	spr->getShaderProgram()->use();
+	spr->removeChildByID("black_outline"_spr);
+}
+
 void updateSprite(CCSprite* spr, ccColor3B color = {0, 0, 0}) {
-	if (!spr) return;
+	if (!spr || color == ccColor3B{0, 0, 0}) return;
+
 	CCSprite* blackOutline = CCSprite::createWithSpriteFrame(spr->displayFrame());
 
 	blackOutline->setContentSize(spr->getContentSize());
@@ -92,14 +103,15 @@ class $modify(MySimplePlayer, SimplePlayer) {
 		bool m_isShaderSpr = false;
 	};
 
-	void setOutlineColor(const ccColor3B& color) {
-		static_cast<CCSprite*>(m_firstLayer->getChildByID("black_outline"_spr))->setColor(color);
+	void removeAllShaders() {
+		m_fields->m_isShaderSpr = false;
+		removeShaders(m_firstLayer);
 
 		if (m_robotSprite) {
 			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_robotSprite, 0)) {
 				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
 					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
-						static_cast<CCSprite*>(part->getChildByID("black_outline"_spr))->setColor(color);
+						removeShaders(part);
 					}
 				}
 			}
@@ -108,7 +120,46 @@ class $modify(MySimplePlayer, SimplePlayer) {
 			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_spiderSprite, 0)) {
 				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
 					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
-						static_cast<CCSprite*>(part->getChildByID("black_outline"_spr))->setColor(color);
+						removeShaders(part);
+					}		
+				}
+			}
+		}
+	}
+
+	void setOutlineColor(const ccColor3B& color) {
+
+		if (color == ccColor3B{0, 0, 0}) {
+			log::info("here");
+			removeAllShaders();
+			return;
+		}
+
+		if (CCSprite* blackOutline = typeinfo_cast<CCSprite*>(m_firstLayer->getChildByID("black_outline"_spr))) {
+			blackOutline->setColor(color);
+		}
+		else {
+			updatePlayerShaders();
+		}
+
+		if (m_robotSprite) {
+			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_robotSprite, 0)) {
+				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
+					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
+						if (CCSprite* blackOutline = typeinfo_cast<CCSprite*>(part->getChildByID("black_outline"_spr))) {
+							blackOutline->setColor(color);
+						}
+					}
+				}
+			}
+		}
+		if (m_spiderSprite) {
+			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_spiderSprite, 0)) {
+				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
+					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
+						if (CCSprite* blackOutline = typeinfo_cast<CCSprite*>(part->getChildByID("black_outline"_spr))) {
+							blackOutline->setColor(color);
+						}
 					}		
 				}
 			}
@@ -145,7 +196,12 @@ class $modify(MySimplePlayer, SimplePlayer) {
 		SimplePlayer::updatePlayerFrame(p0, p1);
 
 		if (m_fields->m_isShaderSpr) {
-			updatePlayerShaders();			
+			updatePlayerShaders();
+			if (p0 == 1) {
+				queueInMainThread([this] {
+					updatePlayerShaders();
+				});
+			}
 		}
 	}
 };
@@ -185,15 +241,23 @@ class $modify(MyPlayerObject, PlayerObject) {
 
 		if (!m_gameLayer || !(m_gameLayer->m_player1 == this || m_gameLayer->m_player2 == this)) return;
 
-		static_cast<CCSprite*>(m_iconSprite->getChildByID("black_outline"_spr))->setOpacity(opacity);
-		static_cast<CCSprite*>(m_vehicleSprite->getChildByID("black_outline"_spr))->setOpacity(opacity);
-		static_cast<CCSprite*>(m_birdVehicle->getChildByID("black_outline"_spr))->setOpacity(opacity);
+		if (CCSprite* blackOutline = typeinfo_cast<CCSprite*>(m_iconSprite->getChildByID("black_outline"_spr))) {
+			blackOutline->setOpacity(opacity);
+		}
+		if (CCSprite* blackOutline = typeinfo_cast<CCSprite*>(m_vehicleSprite->getChildByID("black_outline"_spr))) {
+			blackOutline->setOpacity(opacity);
+		}
+		if (CCSprite* blackOutline = typeinfo_cast<CCSprite*>(m_birdVehicle->getChildByID("black_outline"_spr))) {
+			blackOutline->setOpacity(opacity);
+		}
 
 		if (m_robotSprite) {
 			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_robotSprite, 0)) {
 				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
 					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
-						static_cast<CCSprite*>(part->getChildByID("black_outline"_spr))->setOpacity(opacity);
+						if (CCSprite* blackOutline = typeinfo_cast<CCSprite*>(part->getChildByID("black_outline"_spr))) {
+							blackOutline->setOpacity(opacity);
+						}
 					}
 				}
 			}
@@ -202,7 +266,9 @@ class $modify(MyPlayerObject, PlayerObject) {
 			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_spiderSprite, 0)) {
 				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
 					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
-						static_cast<CCSprite*>(part->getChildByID("black_outline"_spr))->setOpacity(opacity);
+						if (CCSprite* blackOutline = typeinfo_cast<CCSprite*>(part->getChildByID("black_outline"_spr))) {
+							blackOutline->setOpacity(opacity);
+						}
 					}		
 				}
 			}
@@ -342,6 +408,16 @@ class $modify(MyPlayLayer, PlayLayer) {
 	}
 };
 
+class $modify(MyLevelEditorLayer, LevelEditorLayer) {
+
+	void onPlaytest() {
+
+		LevelEditorLayer::onPlaytest();
+		if (m_player1) static_cast<MyPlayerObject*>(m_player1)->setOutlineSpriteOpacity(255);
+		if (m_player2) static_cast<MyPlayerObject*>(m_player2)->setOutlineSpriteOpacity(255);
+	}
+};
+
 class $modify(MyProfilePage, ProfilePage) {
 
     void getUserInfoFinished(GJUserScore* p0) {
@@ -380,6 +456,8 @@ class $modify(MyGJGarageLayer, GJGarageLayer) {
 
 	static void onModify(auto& self) {
         (void)self.setHookPriority("GJGarageLayer::init", -2);
+		(void)self.setHookPriority("GJGarageLayer::onSelect", -2);
+
     }
 
     bool init() {
@@ -391,6 +469,14 @@ class $modify(MyGJGarageLayer, GJGarageLayer) {
 
 		return true;
 	}
+
+    void onSelect(cocos2d::CCObject* sender) {
+		GJGarageLayer::onSelect(sender);
+		if (SimplePlayer* player1 = typeinfo_cast<SimplePlayer*>(getChildByID("player-icon"))) {
+			static_cast<MySimplePlayer*>(player1)->updatePlayerShaders();
+		}
+	}
+
 };
 
 class OutlineColorPickPopupDelegate : public ColorPickPopupDelegate {
