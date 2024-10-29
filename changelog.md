@@ -1,3 +1,7 @@
+# 1.0.3
+- Fix outline not showing on your icon on comments and leaderboards.
+- Fix bug with xdbot respawn flash.
+
 # 1.0.2
 - Fix z ordering of outline
 

@@ -6,6 +6,8 @@
 #include <Geode/modify/ProfilePage.hpp>
 #include <Geode/modify/CharacterColorPage.hpp>
 #include <Geode/modify/GJGarageLayer.hpp>
+#include <Geode/modify/CommentCell.hpp>
+#include <Geode/modify/GJScoreCell.hpp>
 #include "CCSpriteBatchNode.h"
 #include "ShaderCache.h"
 
@@ -205,6 +207,10 @@ class $modify(MySimplePlayer, SimplePlayer) {
 };
 
 class $modify(MyPlayerObject, PlayerObject) {
+
+	static void onModify(auto& self) {
+        (void)self.setHookPriority("PlayerObject::playSpawnEffect", -2);
+    }
 
 	void updatePlayerShaders() {
 
@@ -454,8 +460,7 @@ class $modify(MyGJGarageLayer, GJGarageLayer) {
 
 	static void onModify(auto& self) {
         (void)self.setHookPriority("GJGarageLayer::init", -2);
-		(void)self.setHookPriority("GJGarageLayer::onSelect", -2);
-
+		(void)self.setHookPriority("GJGarageLayer::onSelect", -2);\
     }
 
     bool init() {
@@ -586,5 +591,32 @@ class $modify(MyCharacterColorPage, CharacterColorPage) {
     void onCloseH(CCObject* sender) {
 		CharacterColorPage::onClose(sender);
 		setColorOnGarage();
+	}
+};
+
+class $modify(MyCommentCell, CommentCell) {
+
+    void loadFromComment(GJComment* p0) {
+		CommentCell::loadFromComment(p0);
+
+		if (p0->m_accountID == GJAccountManager::get()->m_accountID){
+			if (SimplePlayer* player = typeinfo_cast<SimplePlayer*>(getChildByIDRecursive("player-icon"))) {
+				static_cast<MySimplePlayer*>(player)->setOutlineColor(Mod::get()->getSavedValue<ccColor3B>("p1-color"));
+			}
+		}
+	}
+};
+
+class $modify(MyGJScoreCell, GJScoreCell) {
+
+    void loadFromScore(GJUserScore* p0) {
+
+		GJScoreCell::loadFromScore(p0);
+
+		if (p0->m_accountID == GJAccountManager::get()->m_accountID){
+			if (SimplePlayer* player = typeinfo_cast<SimplePlayer*>(getChildByIDRecursive("player-icon"))) {
+				static_cast<MySimplePlayer*>(player)->setOutlineColor(Mod::get()->getSavedValue<ccColor3B>("p1-color"));
+			}
+		}
 	}
 };
