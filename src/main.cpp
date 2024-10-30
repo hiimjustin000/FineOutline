@@ -66,11 +66,14 @@ void removeShaders(CCSprite* spr) {
 	spr->setShaderProgram(CCShaderCache::sharedShaderCache()->programForKey(kCCShader_PositionTextureColor));
 	spr->getShaderProgram()->setUniformsForBuiltins();
 	spr->getShaderProgram()->use();
+	spr->setCascadeOpacityEnabled(false);
 	spr->removeChildByID("black_outline"_spr);
 }
 
 void updateSprite(CCSprite* spr, ccColor3B color = {0, 0, 0}) {
 	if (!spr || color == ccColor3B{0, 0, 0}) return;
+
+	spr->setCascadeOpacityEnabled(true);
 
 	CCSprite* blackOutline = CCSprite::createWithSpriteFrame(spr->displayFrame());
 
@@ -241,54 +244,6 @@ class $modify(MyPlayerObject, PlayerObject) {
 		}
 	}
 
-	void setOutlineSpriteOpacity(int opacity) {
-
-		if (!m_gameLayer || !(m_gameLayer->m_player1 == this || m_gameLayer->m_player2 == this)) return;
-
-		if (CCSprite* blackOutline = typeinfo_cast<CCSprite*>(m_iconSprite->getChildByID("black_outline"_spr))) {
-			blackOutline->setOpacity(opacity);
-		}
-		if (CCSprite* blackOutline = typeinfo_cast<CCSprite*>(m_vehicleSprite->getChildByID("black_outline"_spr))) {
-			blackOutline->setOpacity(opacity);
-		}
-		if (CCSprite* blackOutline = typeinfo_cast<CCSprite*>(m_birdVehicle->getChildByID("black_outline"_spr))) {
-			blackOutline->setOpacity(opacity);
-		}
-
-		if (m_robotSprite) {
-			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_robotSprite, 0)) {
-				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
-					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
-						if (CCSprite* blackOutline = typeinfo_cast<CCSprite*>(part->getChildByID("black_outline"_spr))) {
-							blackOutline->setOpacity(opacity);
-						}
-					}
-				}
-			}
-		}
-		if (m_spiderSprite) {
-			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_spiderSprite, 0)) {
-				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
-					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
-						if (CCSprite* blackOutline = typeinfo_cast<CCSprite*>(part->getChildByID("black_outline"_spr))) {
-							blackOutline->setOpacity(opacity);
-						}
-					}		
-				}
-			}
-		}
-	}
-
-    void playerDestroyed(bool p0) {
-		PlayerObject::playerDestroyed(p0);
-		setOutlineSpriteOpacity(0);
-	}
-
-    void playSpawnEffect() {
-		PlayerObject::playSpawnEffect();
-		setOutlineSpriteOpacity(255);
-	}
-
 	bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool highGraphics) {
 		if (!PlayerObject::init(player, ship, gameLayer, layer, highGraphics)) return false;
 		queueInMainThread([this] {
@@ -299,7 +254,6 @@ class $modify(MyPlayerObject, PlayerObject) {
 
 	void updatePlayerFrame(int frame) {
         PlayerObject::updatePlayerFrame(frame);
-
 		updatePlayerShaders();
     }
 
@@ -379,25 +333,6 @@ class $modify(MyPlayLayer, PlayLayer) {
 		return true;
 	}
 
-    void showCompleteEffect() {
-		PlayLayer::showCompleteEffect();
-		if (m_player1) static_cast<MyPlayerObject*>(m_player1)->setOutlineSpriteOpacity(0);
-		if (m_player2) static_cast<MyPlayerObject*>(m_player2)->setOutlineSpriteOpacity(0);
-	}
-
-	void levelComplete() {
-		PlayLayer::levelComplete();
-		if (m_player1) static_cast<MyPlayerObject*>(m_player1)->setOutlineSpriteOpacity(0);
-		if (m_player2) static_cast<MyPlayerObject*>(m_player2)->setOutlineSpriteOpacity(0);
-	}
-
-    void resetLevelFromStart() {
-
-		PlayLayer::resetLevelFromStart();
-		if (m_player1) static_cast<MyPlayerObject*>(m_player1)->setOutlineSpriteOpacity(255);
-		if (m_player2) static_cast<MyPlayerObject*>(m_player2)->setOutlineSpriteOpacity(255);
-	}
-
 	void checkGlobed(float dt) {
 		if (CCNode* wrapper = m_progressBar->getChildByID("dankmeme.globed2/progress-bar-wrapper")) {
 			if (CCNode* progressIcon = wrapper->getChildByID("dankmeme.globed2/self-player-progress")) {
@@ -409,16 +344,6 @@ class $modify(MyPlayLayer, PlayLayer) {
 				}
 			}
 		}
-	}
-};
-
-class $modify(MyLevelEditorLayer, LevelEditorLayer) {
-
-	void onPlaytest() {
-
-		LevelEditorLayer::onPlaytest();
-		if (m_player1) static_cast<MyPlayerObject*>(m_player1)->setOutlineSpriteOpacity(255);
-		if (m_player2) static_cast<MyPlayerObject*>(m_player2)->setOutlineSpriteOpacity(255);
 	}
 };
 

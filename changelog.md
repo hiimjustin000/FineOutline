@@ -1,3 +1,6 @@
+# 1.0.4
+- Make outline opacity less convoluted.
+
 # 1.0.3
 - Fix outline not showing on your icon on comments and leaderboards.
 - Fix bug with xdbot respawn flash.
