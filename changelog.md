@@ -1,3 +1,6 @@
+# 1.0.6
+- Remove changes for android only.
+
 # 1.0.5
 - Made color bleeding less apparent.
 
