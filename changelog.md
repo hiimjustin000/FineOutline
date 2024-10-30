@@ -1,5 +1,6 @@
 # 1.0.6
-- Remove changes for android only.
+- Revert 1.0.5 due to issues with android.
+- Remove hacky More Icons fix now that More Icons properly calls onSelect
 
 # 1.0.5
 - Made color bleeding less apparent.

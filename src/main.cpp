@@ -16,8 +16,6 @@ using namespace geode::prelude;
 $on_mod(Loaded) {
 	
 	std::string fragIcon = R"(
-		#version 330
-
 		#ifdef GL_ES
 		precision mediump float;
 		#endif
@@ -25,17 +23,11 @@ $on_mod(Loaded) {
 		varying vec4 v_fragmentColor;
 		varying vec2 v_texCoord;
 		uniform sampler2D CC_Texture0;
+		uniform vec2 u_textureSize;
 
 		void main() {
-			vec2 texelSize = 1.5 / vec2(textureSize(CC_Texture0, 0));
+			vec2 texelSize = 1 / u_textureSize;
 			vec4 c = texture2D(CC_Texture0, v_texCoord);
-
-			c.a = min(c.a, min(
-				min(texture2D(CC_Texture0, v_texCoord + vec2(-texelSize.x, 0.0)).a,
-					texture2D(CC_Texture0, v_texCoord + vec2(texelSize.x, 0.0)).a),
-				min(texture2D(CC_Texture0, v_texCoord + vec2(0.0, texelSize.y)).a,
-					texture2D(CC_Texture0, v_texCoord + vec2(0.0, -texelSize.y)).a)
-				));
 
 			float br = max(max(c.r, c.g), c.b);
 			float gr = float(abs(c.r - c.g) < 0.25 && abs(c.g - c.b) < 0.25);
@@ -48,8 +40,6 @@ $on_mod(Loaded) {
 	ShaderCache::get()->createShader("icon", fragIcon);
 
 	std::string fragOutline = R"(
-		#version 330
-
 		#ifdef GL_ES
 		precision lowp float;
 		#endif
@@ -57,6 +47,7 @@ $on_mod(Loaded) {
 		varying vec4 v_fragmentColor;
 		varying vec2 v_texCoord;
 		uniform sampler2D CC_Texture0;
+		uniform vec2 u_textureSize;
 
 		void main() {
 			vec4 c = texture2D(CC_Texture0, v_texCoord);
@@ -95,16 +86,22 @@ void updateSprite(CCSprite* spr, ccColor3B color = {0, 0, 0}) {
 	blackOutline->setColor(color);
 
 	if (CCGLProgram* prgOutline = ShaderCache::get()->getProgram("outline")) {
+		prgOutline->setUniformsForBuiltins();
 		blackOutline->setShaderProgram(prgOutline);
-		blackOutline->getShaderProgram()->setUniformsForBuiltins();
-		blackOutline->getShaderProgram()->use();
+		prgOutline->use();
+		GLint textureSizeLocation = glGetUniformLocation(prgOutline->getProgram(), "u_textureSize");
+		CCSize textureSize = blackOutline->getTextureRect().size;
+		glUniform2f(textureSizeLocation, textureSize.width, textureSize.height);
 		blackOutline->setBlendFunc({GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA});
 	}
 
 	if (CCGLProgram* progIcon = ShaderCache::get()->getProgram("icon")) {
+		progIcon->setUniformsForBuiltins();
 		spr->setShaderProgram(progIcon);
-		spr->getShaderProgram()->setUniformsForBuiltins();
-		spr->getShaderProgram()->use();
+		progIcon->use();
+		GLint textureSizeLocation = glGetUniformLocation(progIcon->getProgram(), "u_textureSize");
+		CCSize textureSize = spr->getTextureRect().size;
+		glUniform2f(textureSizeLocation, textureSize.width, textureSize.height);
 		spr->setBlendFunc({GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA});
 	}
 
@@ -212,11 +209,6 @@ class $modify(MySimplePlayer, SimplePlayer) {
 
 		if (m_fields->m_isShaderSpr) {
 			updatePlayerShaders();
-			if (p0 == 1) {
-				queueInMainThread([this] {
-					updatePlayerShaders();
-				});
-			}
 		}
 	}
 };

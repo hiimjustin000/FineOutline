@@ -24,6 +24,7 @@ void ShaderCache::createShader(std::string name, std::string frag) {
     prg->addAttribute(kCCAttributeNamePosition, kCCVertexAttrib_Position);
     prg->addAttribute(kCCAttributeNameColor, kCCVertexAttrib_Color);
     prg->addAttribute(kCCAttributeNameTexCoord, kCCVertexAttrib_TexCoords);
+    
     prg->retain();
     prg->link();
     prg->updateUniforms();
