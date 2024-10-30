@@ -23,10 +23,8 @@ $on_mod(Loaded) {
 		varying vec4 v_fragmentColor;
 		varying vec2 v_texCoord;
 		uniform sampler2D CC_Texture0;
-		uniform vec2 u_textureSize;
 
 		void main() {
-			vec2 texelSize = 1 / u_textureSize;
 			vec4 c = texture2D(CC_Texture0, v_texCoord);
 
 			float br = max(max(c.r, c.g), c.b);
@@ -41,13 +39,12 @@ $on_mod(Loaded) {
 
 	std::string fragOutline = R"(
 		#ifdef GL_ES
-		precision lowp float;
+		precision mediump float;
 		#endif
 
 		varying vec4 v_fragmentColor;
 		varying vec2 v_texCoord;
 		uniform sampler2D CC_Texture0;
-		uniform vec2 u_textureSize;
 
 		void main() {
 			vec4 c = texture2D(CC_Texture0, v_texCoord);
@@ -89,9 +86,6 @@ void updateSprite(CCSprite* spr, ccColor3B color = {0, 0, 0}) {
 		prgOutline->setUniformsForBuiltins();
 		blackOutline->setShaderProgram(prgOutline);
 		prgOutline->use();
-		GLint textureSizeLocation = glGetUniformLocation(prgOutline->getProgram(), "u_textureSize");
-		CCSize textureSize = blackOutline->getTextureRect().size;
-		glUniform2f(textureSizeLocation, textureSize.width, textureSize.height);
 		blackOutline->setBlendFunc({GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA});
 	}
 
@@ -99,9 +93,6 @@ void updateSprite(CCSprite* spr, ccColor3B color = {0, 0, 0}) {
 		progIcon->setUniformsForBuiltins();
 		spr->setShaderProgram(progIcon);
 		progIcon->use();
-		GLint textureSizeLocation = glGetUniformLocation(progIcon->getProgram(), "u_textureSize");
-		CCSize textureSize = spr->getTextureRect().size;
-		glUniform2f(textureSizeLocation, textureSize.width, textureSize.height);
 		spr->setBlendFunc({GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA});
 	}
 

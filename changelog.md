@@ -1,3 +1,6 @@
+# 1.0.7
+- I guess don't try anything, doing anything ever will crash on android
+
 # 1.0.6
 - Revert 1.0.5 due to issues with android.
 - Remove hacky More Icons fix now that More Icons properly calls onSelect
