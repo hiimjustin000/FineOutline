@@ -16,6 +16,8 @@ using namespace geode::prelude;
 $on_mod(Loaded) {
 	
 	std::string fragIcon = R"(
+		#version 330
+
 		#ifdef GL_ES
 		precision mediump float;
 		#endif
@@ -28,16 +30,12 @@ $on_mod(Loaded) {
 			vec2 texelSize = 1.5 / vec2(textureSize(CC_Texture0, 0));
 			vec4 c = texture2D(CC_Texture0, v_texCoord);
 
-			vec2 leftCoord = clamp(v_texCoord + vec2(-texelSize.x, 0.0), vec2(0.0), vec2(1.0));
-			vec2 rightCoord = clamp(v_texCoord + vec2(texelSize.x, 0.0), vec2(0.0), vec2(1.0));
-			vec2 upCoord = clamp(v_texCoord + vec2(0.0, texelSize.y), vec2(0.0), vec2(1.0));
-			vec2 downCoord = clamp(v_texCoord + vec2(0.0, -texelSize.y), vec2(0.0), vec2(1.0));
-
 			c.a = min(c.a, min(
-                min(texture2D(CC_Texture0, leftCoord).a, texture2D(CC_Texture0, rightCoord).a),
-                min(texture2D(CC_Texture0, upCoord).a, texture2D(CC_Texture0, downCoord).a)
-                ));
-
+				min(texture2D(CC_Texture0, v_texCoord + vec2(-texelSize.x, 0.0)).a,
+					texture2D(CC_Texture0, v_texCoord + vec2(texelSize.x, 0.0)).a),
+				min(texture2D(CC_Texture0, v_texCoord + vec2(0.0, texelSize.y)).a,
+					texture2D(CC_Texture0, v_texCoord + vec2(0.0, -texelSize.y)).a)
+				));
 
 			float br = max(max(c.r, c.g), c.b);
 			float gr = float(abs(c.r - c.g) < 0.25 && abs(c.g - c.b) < 0.25);
@@ -50,6 +48,8 @@ $on_mod(Loaded) {
 	ShaderCache::get()->createShader("icon", fragIcon);
 
 	std::string fragOutline = R"(
+		#version 330
+
 		#ifdef GL_ES
 		precision lowp float;
 		#endif
