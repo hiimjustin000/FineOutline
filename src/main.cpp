@@ -25,10 +25,18 @@ $on_mod(Loaded) {
 		uniform sampler2D CC_Texture0;
 
 		void main() {
+			vec2 texelSize = 1.5 / vec2(textureSize(CC_Texture0, 0));
 			vec4 c = texture2D(CC_Texture0, v_texCoord);
+
+			c.a = min(c.a, min(
+				min(texture2D(CC_Texture0, v_texCoord + vec2(-texelSize.x, 0.0)).a,
+					texture2D(CC_Texture0, v_texCoord + vec2(texelSize.x, 0.0)).a),
+				min(texture2D(CC_Texture0, v_texCoord + vec2(0.0, texelSize.y)).a,
+					texture2D(CC_Texture0, v_texCoord + vec2(0.0, -texelSize.y)).a)
+				));
+
 			float br = max(max(c.r, c.g), c.b);
 			float gr = float(abs(c.r - c.g) < 0.25 && abs(c.g - c.b) < 0.25);
-
 			c.rgb = mix(c.rgb, vec3(1.0), float(br < 1.0 && c.a > 0.0 && gr > 0.0));
 
 			gl_FragColor = v_fragmentColor * c;

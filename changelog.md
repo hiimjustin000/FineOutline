@@ -1,3 +1,6 @@
+# 1.0.5
+- Made color bleeding less apparent.
+
 # 1.0.4
 - Make outline opacity less convoluted.
 
