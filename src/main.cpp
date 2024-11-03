@@ -1,4 +1,5 @@
 #include <Geode/Geode.hpp>
+#include <Geode/modify/GameManager.hpp>
 #include <Geode/modify/SimplePlayer.hpp>
 #include <Geode/modify/PlayerObject.hpp>
 #include <Geode/modify/PlayLayer.hpp>
@@ -13,7 +14,7 @@
 
 using namespace geode::prelude;
 
-$on_mod(Loaded) {
+void loadShaders() {
 	
 	std::string fragIcon = R"(
 		#ifdef GL_ES
@@ -62,6 +63,19 @@ $on_mod(Loaded) {
 	ShaderCache::get()->createShader("outline", fragOutline);
 };
 
+$on_mod(Loaded) {
+	loadShaders();
+}
+
+class $modify(MyGameManager, GameManager) {
+
+	void reloadAllStep5() {
+		GameManager::reloadAllStep5();
+		ShaderCache::get()->clearShaders();
+		loadShaders();
+	}
+};
+
 void removeShaders(CCSprite* spr) {
 	spr->setShaderProgram(CCShaderCache::sharedShaderCache()->programForKey(kCCShader_PositionTextureColor));
 	spr->getShaderProgram()->setUniformsForBuiltins();
@@ -105,33 +119,26 @@ class $modify(MySimplePlayer, SimplePlayer) {
 	struct Fields {
 		bool m_isGlobedSelf = false;
 		bool m_isShaderSpr = false;
+		bool m_shaderSprDual = false;
 	};
 
 	void removeAllShaders() {
 		m_fields->m_isShaderSpr = false;
 		removeShaders(m_firstLayer);
 
-		if (m_robotSprite) {
-			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_robotSprite, 0)) {
-				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
-					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
-						removeShaders(part);
-					}
-				}
+		if (m_robotSprite && m_robotSprite->m_paSprite) {
+			for(CCSpritePart* part : CCArrayExt<CCSpritePart*>(m_robotSprite->m_paSprite->m_spriteParts)) {
+				removeShaders(part);
 			}
 		}
-		if (m_spiderSprite) {
-			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_spiderSprite, 0)) {
-				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
-					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
-						removeShaders(part);
-					}		
-				}
+		if (m_spiderSprite && m_spiderSprite->m_paSprite) {
+			for(CCSpritePart* part : CCArrayExt<CCSpritePart*>(m_spiderSprite->m_paSprite->m_spriteParts)) {
+				removeShaders(part);
 			}
 		}
 	}
 
-	void setOutlineColor(const ccColor3B& color) {
+	void setOutlineColor(const ccColor3B& color, bool dual) {
 
 		if (color == ccColor3B{0, 0, 0}) {
 			removeAllShaders();
@@ -142,53 +149,38 @@ class $modify(MySimplePlayer, SimplePlayer) {
 			blackOutline->setColor(color);
 		}
 		else {
-			updatePlayerShaders();
+			updatePlayerShaders(dual);
 		}
 
-		if (m_robotSprite) {
-			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_robotSprite, 0)) {
-				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
-					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
-						if (CCSprite* blackOutline = typeinfo_cast<CCSprite*>(part->getChildByID("black_outline"_spr))) {
-							blackOutline->setColor(color);
-						}
-					}
+		if (m_robotSprite && m_robotSprite->m_paSprite) {
+			for(CCSpritePart* part : CCArrayExt<CCSpritePart*>(m_robotSprite->m_paSprite->m_spriteParts)) {
+				if (CCSprite* blackOutline = typeinfo_cast<CCSprite*>(part->getChildByID("black_outline"_spr))) {
+					blackOutline->setColor(color);
 				}
 			}
 		}
-		if (m_spiderSprite) {
-			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_spiderSprite, 0)) {
-				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
-					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
-						if (CCSprite* blackOutline = typeinfo_cast<CCSprite*>(part->getChildByID("black_outline"_spr))) {
-							blackOutline->setColor(color);
-						}
-					}		
+		if (m_spiderSprite && m_spiderSprite->m_paSprite) {
+			for(CCSpritePart* part : CCArrayExt<CCSpritePart*>(m_spiderSprite->m_paSprite->m_spriteParts)) {
+				if (CCSprite* blackOutline = typeinfo_cast<CCSprite*>(part->getChildByID("black_outline"_spr))) {
+					blackOutline->setColor(color);
 				}
 			}
 		}
 	}
 
-	void updatePlayerShaders() {
+	void updatePlayerShaders(bool dual) {
 		m_fields->m_isShaderSpr = true;
-		ccColor3B outlineColor = Mod::get()->getSavedValue<ccColor3B>("p1-color");
+		m_fields->m_shaderSprDual = dual;
+		ccColor3B outlineColor = Mod::get()->getSavedValue<ccColor3B>(dual ? "p2-color" : "p1-color");
 
-		if (m_robotSprite) {
-			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_robotSprite, 0)) {
-				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
-					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
-						updateSprite(part, outlineColor);
-					}
-				}
+		if (m_robotSprite && m_robotSprite->m_paSprite) {
+			for(CCSpritePart* part : CCArrayExt<CCSpritePart*>(m_robotSprite->m_paSprite->m_spriteParts)) {
+				updateSprite(part, outlineColor);
 			}
 		}
-		if (m_spiderSprite) {
-			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_spiderSprite, 0)) {
-				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
-					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
-						updateSprite(part, outlineColor);
-					}		
-				}
+		if (m_spiderSprite && m_spiderSprite->m_paSprite) {
+			for(CCSpritePart* part : CCArrayExt<CCSpritePart*>(m_spiderSprite->m_paSprite->m_spriteParts)) {
+				updateSprite(part, outlineColor);
 			}
 		}
 		updateSprite(m_firstLayer, outlineColor);
@@ -199,7 +191,7 @@ class $modify(MySimplePlayer, SimplePlayer) {
 		SimplePlayer::updatePlayerFrame(p0, p1);
 
 		if (m_fields->m_isShaderSpr) {
-			updatePlayerShaders();
+			updatePlayerShaders(m_fields->m_shaderSprDual);
 		}
 	}
 };
@@ -214,27 +206,20 @@ class $modify(MyPlayerObject, PlayerObject) {
 
 		if (!m_gameLayer || !(m_gameLayer->m_player1 == this || m_gameLayer->m_player2 == this)) return;
 
-		ccColor3B outlineColor = Mod::get()->getSavedValue<ccColor3B>("p1-color");
+		ccColor3B outlineColor = Mod::get()->getSavedValue<ccColor3B>(
+			Loader::get()->isModLoaded("weebify.separate_dual_icons") && m_gameLayer->m_player2 == this ? "p2-color" : "p1-color");
 
 		updateSprite(m_iconSprite, outlineColor);
 		updateSprite(m_vehicleSprite, outlineColor);
 		updateSprite(m_birdVehicle, outlineColor);
-		if (m_robotSprite) {
-			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_robotSprite, 0)) {
-				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
-					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
-						updateSprite(part, outlineColor);
-					}
-				}
+		if (m_robotSprite && m_robotSprite->m_paSprite) {
+			for(CCSpritePart* part : CCArrayExt<CCSpritePart*>(m_robotSprite->m_paSprite->m_spriteParts)) {
+				updateSprite(part, outlineColor);
 			}
 		}
-		if (m_spiderSprite) {
-			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_spiderSprite, 0)) {
-				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
-					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
-						updateSprite(part, outlineColor);
-					}		
-				}
+		if (m_spiderSprite && m_spiderSprite->m_paSprite) {
+			for(CCSpritePart* part : CCArrayExt<CCSpritePart*>(m_spiderSprite->m_paSprite->m_spriteParts)) {
+				updateSprite(part, outlineColor);
 			}
 		}
 	}
@@ -278,13 +263,9 @@ class $modify(MyPlayerObject, PlayerObject) {
 
 		static_cast<MyCCSpriteBatchNode*>(m_robotBatchNode)->setFake(true);
 
-		if (m_robotSprite) {
-			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_robotSprite, 0)) {
-				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
-					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
-						updateSprite(part);
-					}
-				}
+		if (m_robotSprite && m_robotSprite->m_paSprite) {
+			for(CCSpritePart* part : CCArrayExt<CCSpritePart*>(m_robotSprite->m_paSprite->m_spriteParts)) {
+				updateSprite(part);
 			}
 		}
     }
@@ -294,13 +275,9 @@ class $modify(MyPlayerObject, PlayerObject) {
 
 		static_cast<MyCCSpriteBatchNode*>(m_spiderBatchNode)->setFake(true);
 
-		if (m_spiderSprite) {
-			if (CCPartAnimSprite* animSpr = getChildOfType<CCPartAnimSprite>(m_spiderSprite, 0)) {
-				for(CCNode* node : CCArrayExt<CCNode*>(animSpr->getChildren())) {
-					if(CCSpritePart* part = typeinfo_cast<CCSpritePart*>(node)) {
-						updateSprite(part);
-					}		
-				}
+		if (m_spiderSprite && m_spiderSprite->m_paSprite) {
+			for(CCSpritePart* part : CCArrayExt<CCSpritePart*>(m_spiderSprite->m_paSprite->m_spriteParts)) {
+				updateSprite(part);
 			}
 		}
     }
@@ -331,9 +308,9 @@ class $modify(MyPlayLayer, PlayLayer) {
 	void checkGlobed(float dt) {
 		if (CCNode* wrapper = m_progressBar->getChildByID("dankmeme.globed2/progress-bar-wrapper")) {
 			if (CCNode* progressIcon = wrapper->getChildByID("dankmeme.globed2/self-player-progress")) {
-				if (GlobedSimplePlayer* globedSimplePlayer = getChildOfType<GlobedSimplePlayer>(progressIcon, 0)) {
-					if (SimplePlayer* player = getChildOfType<SimplePlayer>(globedSimplePlayer, 0)) {
-						static_cast<MySimplePlayer*>(player)->updatePlayerShaders();
+				if (GlobedSimplePlayer* globedSimplePlayer = progressIcon->getChildByType<GlobedSimplePlayer>(0)) {
+					if (SimplePlayer* player = globedSimplePlayer->getChildByType<SimplePlayer>(0)) {
+						static_cast<MySimplePlayer*>(player)->updatePlayerShaders(false);
 						unschedule(schedule_selector(MyPlayLayer::checkGlobed));
 					}
 				}
@@ -343,20 +320,38 @@ class $modify(MyPlayLayer, PlayLayer) {
 };
 
 class $modify(MyProfilePage, ProfilePage) {
+	struct Fields {
+        SEL_MenuHandler m_playerToggle;
+        SEL_MenuHandler m_shipToggle;
+    };
 
     void getUserInfoFinished(GJUserScore* p0) {
 		ProfilePage::getUserInfoFinished(p0);
 
 		if (m_ownProfile) {
+			auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+			auto dual = sdi && sdi->getSavedValue<bool>("2pselected");
 			CCNode* playerMenu = m_mainLayer->getChildByID("player-menu");
 			for (CCNode* menuChild : CCArrayExt<CCNode*>(playerMenu->getChildren())) {
-				if (SimplePlayer* player = getChildOfType<SimplePlayer>(menuChild, 0)) {
-					static_cast<MySimplePlayer*>(player)->updatePlayerShaders();
+				if (SimplePlayer* player = menuChild->getChildByType<SimplePlayer>(0)) {
+					static_cast<MySimplePlayer*>(player)->updatePlayerShaders(dual);
 				}
-				if (CCNode* innerNode = getChildOfType<CCNode>(menuChild, 0)) {
-					if (SimplePlayer* player = getChildOfType<SimplePlayer>(innerNode, 0)) {
-						static_cast<MySimplePlayer*>(player)->updatePlayerShaders();
+				if (CCNode* innerNode = menuChild->getChildByType<CCNode>(0)) {
+					if (SimplePlayer* player = innerNode->getChildByType<SimplePlayer>(0)) {
+						static_cast<MySimplePlayer*>(player)->updatePlayerShaders(dual);
 					}
+				}
+			}
+
+			if (auto twoPToggler = static_cast<CCMenuItemSpriteExtra*>(m_mainLayer->getChildByID("left-menu")->getChildByID("2p-toggler"))) {
+				m_fields->m_playerToggle = twoPToggler->m_pfnSelector;
+				twoPToggler->m_pfnSelector = menu_selector(MyProfilePage::on2PToggle);
+			}
+
+			if (Loader::get()->isModLoaded("weebify.separate_dual_icons") && !Loader::get()->isModLoaded("rynat.better_unlock_info")) {
+				if (auto shipToggler = static_cast<CCMenuItemSpriteExtra*>(playerMenu->getChildByID("player-ship"))) {
+					m_fields->m_shipToggle = shipToggler->m_pfnSelector;
+					shipToggler->m_pfnSelector = menu_selector(MyProfilePage::onShipToggle);
 				}
 			}
 		}
@@ -367,13 +362,46 @@ class $modify(MyProfilePage, ProfilePage) {
 		if (m_ownProfile) {
 			CCNode* playerMenu = m_mainLayer->getChildByID("player-menu");
 			if (CCNode* shipNode = playerMenu->getChildByID("player-ship")) {
-				if (SimplePlayer* player = getChildOfType<SimplePlayer>(shipNode, 0)) {
-					static_cast<MySimplePlayer*>(player)->updatePlayerShaders();
+				if (SimplePlayer* player = shipNode->getChildByType<SimplePlayer>(0)) {
+					auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+					static_cast<MySimplePlayer*>(player)->updatePlayerShaders(sdi && sdi->getSavedValue<bool>("2pselected"));
 				}
 			}
 		}
 	}
 
+	void on2PToggle(CCObject* sender) {
+		(this->*m_fields->m_playerToggle)(sender);
+
+		if (m_ownProfile) {
+			auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+			auto dual = sdi && sdi->getSavedValue<bool>("2pselected");
+			CCNode* playerMenu = m_mainLayer->getChildByID("player-menu");
+			for (CCNode* menuChild : CCArrayExt<CCNode*>(playerMenu->getChildren())) {
+				if (SimplePlayer* player = menuChild->getChildByType<SimplePlayer>(0)) {
+					static_cast<MySimplePlayer*>(player)->updatePlayerShaders(dual);
+				}
+				if (CCNode* innerNode = menuChild->getChildByType<CCNode>(0)) {
+					if (SimplePlayer* player = innerNode->getChildByType<SimplePlayer>(0)) {
+						static_cast<MySimplePlayer*>(player)->updatePlayerShaders(dual);
+					}
+				}
+			}
+		}
+	}
+
+	void onShipToggle(CCObject* sender) {
+		(this->*m_fields->m_shipToggle)(sender);
+		if (m_ownProfile) {
+			CCNode* playerMenu = m_mainLayer->getChildByID("player-menu");
+			if (CCNode* shipNode = playerMenu->getChildByID("player-ship")) {
+				if (SimplePlayer* player = shipNode->getChildByType<SimplePlayer>(0)) {
+					auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+					static_cast<MySimplePlayer*>(player)->updatePlayerShaders(sdi && sdi->getSavedValue<bool>("2pselected"));
+				}
+			}
+		}
+	}
 };
 
 class $modify(MyGJGarageLayer, GJGarageLayer) {
@@ -386,8 +414,11 @@ class $modify(MyGJGarageLayer, GJGarageLayer) {
     bool init() {
 		if (!GJGarageLayer::init()) return false;
 
-		if (SimplePlayer* player1 = typeinfo_cast<SimplePlayer*>(getChildByID("player-icon"))) {
-			static_cast<MySimplePlayer*>(player1)->updatePlayerShaders();
+		if (m_playerObject) {
+			static_cast<MySimplePlayer*>(m_playerObject)->updatePlayerShaders(false);
+		}
+		if (SimplePlayer* player2 = typeinfo_cast<SimplePlayer*>(getChildByID("player2-icon"))) {
+			static_cast<MySimplePlayer*>(player2)->updatePlayerShaders(true);
 		}
 
 		return true;
@@ -395,8 +426,11 @@ class $modify(MyGJGarageLayer, GJGarageLayer) {
 
     void onSelect(cocos2d::CCObject* sender) {
 		GJGarageLayer::onSelect(sender);
-		if (SimplePlayer* player1 = typeinfo_cast<SimplePlayer*>(getChildByID("player-icon"))) {
-			static_cast<MySimplePlayer*>(player1)->updatePlayerShaders();
+		if (m_playerObject) {
+			static_cast<MySimplePlayer*>(m_playerObject)->updatePlayerShaders(false);
+		}
+		if (SimplePlayer* player2 = typeinfo_cast<SimplePlayer*>(getChildByID("player2-icon"))) {
+			static_cast<MySimplePlayer*>(player2)->updatePlayerShaders(true);
 		}
 	}
 
@@ -405,19 +439,21 @@ class $modify(MyGJGarageLayer, GJGarageLayer) {
 class OutlineColorPickPopupDelegate : public ColorPickPopupDelegate {
     
 	Ref<CCArray> m_icons;
+	bool m_dual = false;
 	public:
-	void init(CCArray* icons) {
+	void init(CCArray* icons, bool dual) {
 		m_icons = icons;
+		m_dual = dual;
 	}
 
 	void updateColor(ccColor4B const& c) {
 
 		for (CCNode* children : CCArrayExt<CCNode*>(m_icons)) {
 			if (SimplePlayer* player = typeinfo_cast<SimplePlayer*>(children)) {
-				static_cast<MySimplePlayer*>(player)->setOutlineColor(ccColor3B{c.r, c.g, c.b});
+				static_cast<MySimplePlayer*>(player)->setOutlineColor(ccColor3B{c.r, c.g, c.b}, m_dual);
 			}
 		}
-		Mod::get()->setSavedValue<ccColor3B>("p1-color", ccColor3B{c.r, c.g, c.b});
+		Mod::get()->setSavedValue<ccColor3B>(m_dual ? "p2-color" : "p1-color", ccColor3B{c.r, c.g, c.b});
 
 	}
 };
@@ -444,9 +480,11 @@ class $modify(MyCharacterColorPage, CharacterColorPage) {
 
  		m_fields->m_outlineColorDelegate = new OutlineColorPickPopupDelegate();
 
+		auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+		auto dual = sdi && sdi->getSavedValue<bool>("2pselected");
 		for (CCNode* children : CCArrayExt<CCNode*>(m_playerObjects)) {
 			if (SimplePlayer* player = typeinfo_cast<SimplePlayer*>(children)) {
-				static_cast<MySimplePlayer*>(player)->updatePlayerShaders();
+				static_cast<MySimplePlayer*>(player)->updatePlayerShaders(dual);
 			}
 		}
 
@@ -468,8 +506,10 @@ class $modify(MyCharacterColorPage, CharacterColorPage) {
 	}
 
 	void onOutlineColor(CCObject* sender) {
-		geode::ColorPickPopup* colorPopup = geode::ColorPickPopup::create(Mod::get()->getSavedValue<ccColor3B>("p1-color"));
-		m_fields->m_outlineColorDelegate->init(m_playerObjects);
+		auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+		auto dual = sdi && sdi->getSavedValue<bool>("2pselected");
+		geode::ColorPickPopup* colorPopup = geode::ColorPickPopup::create(Mod::get()->getSavedValue<ccColor3B>(dual ? "p2-color" : "p1-color"));
+		m_fields->m_outlineColorDelegate->init(m_playerObjects, dual);
 		colorPopup->setDelegate(m_fields->m_outlineColorDelegate);
 		colorPopup->show();
 	}
@@ -482,10 +522,12 @@ class $modify(MyCharacterColorPage, CharacterColorPage) {
 
     void toggleShip(CCObject* sender) {
 		CharacterColorPage::toggleShip(sender);
+		auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+		auto dual = sdi && sdi->getSavedValue<bool>("2pselected");
 		for (CCNode* children : CCArrayExt<CCNode*>(m_playerObjects)) {
 			if (children->getParent()->getID() == "ship-button") {
 				if (SimplePlayer* player = typeinfo_cast<SimplePlayer*>(children)) {
-					static_cast<MySimplePlayer*>(player)->updatePlayerShaders();
+					static_cast<MySimplePlayer*>(player)->updatePlayerShaders(dual);
 				}
 				return;
 			}
@@ -494,9 +536,12 @@ class $modify(MyCharacterColorPage, CharacterColorPage) {
 
 	void setColorOnGarage() {
 		CCScene* scene = CCDirector::get()->m_pRunningScene;
-		if (GJGarageLayer* garage = getChildOfType<GJGarageLayer>(scene, 0)) {
-			if (SimplePlayer* player1 = typeinfo_cast<SimplePlayer*>(garage->getChildByID("player-icon"))) {
-				static_cast<MySimplePlayer*>(player1)->setOutlineColor(Mod::get()->getSavedValue<ccColor3B>("p1-color"));
+		if (GJGarageLayer* garage = scene->getChildByType<GJGarageLayer>(0)) {
+			if (garage->m_playerObject) {
+				static_cast<MySimplePlayer*>(garage->m_playerObject)->setOutlineColor(Mod::get()->getSavedValue<ccColor3B>("p1-color"), false);
+			}
+			if (SimplePlayer* player2 = typeinfo_cast<SimplePlayer*>(garage->getChildByID("player2-icon"))) {
+				static_cast<MySimplePlayer*>(player2)->setOutlineColor(Mod::get()->getSavedValue<ccColor3B>("p2-color"), true);
 			}
 		}
 	}
@@ -521,7 +566,7 @@ class $modify(MyCommentCell, CommentCell) {
 
 		if (p0->m_accountID == GJAccountManager::get()->m_accountID){
 			if (SimplePlayer* player = typeinfo_cast<SimplePlayer*>(getChildByIDRecursive("player-icon"))) {
-				static_cast<MySimplePlayer*>(player)->setOutlineColor(Mod::get()->getSavedValue<ccColor3B>("p1-color"));
+				static_cast<MySimplePlayer*>(player)->setOutlineColor(Mod::get()->getSavedValue<ccColor3B>("p1-color"), false);
 			}
 		}
 	}
@@ -535,7 +580,7 @@ class $modify(MyGJScoreCell, GJScoreCell) {
 
 		if (p0->m_accountID == GJAccountManager::get()->m_accountID){
 			if (SimplePlayer* player = typeinfo_cast<SimplePlayer*>(getChildByIDRecursive("player-icon"))) {
-				static_cast<MySimplePlayer*>(player)->setOutlineColor(Mod::get()->getSavedValue<ccColor3B>("p1-color"));
+				static_cast<MySimplePlayer*>(player)->setOutlineColor(Mod::get()->getSavedValue<ccColor3B>("p1-color"), false);
 			}
 		}
 	}

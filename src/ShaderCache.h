@@ -34,7 +34,9 @@ class ShaderCache {
     CCGLProgram* getProgram(std::string name);
     std::string getVertex();
     void createShader(std::string name, std::string frag);
-
+    void clearShaders(){
+        m_shaders->removeAllObjects();
+    }
 
     static ShaderCache* get(){
 

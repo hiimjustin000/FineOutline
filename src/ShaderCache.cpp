@@ -20,7 +20,7 @@ std::string ShaderCache::getVertex() {
 
 void ShaderCache::createShader(std::string name, std::string frag) {
     CCGLProgram* prg = new CCGLProgram();
-    prg->initWithVertexShaderByteArray(ShaderCache::get()->getVertex().c_str(), frag.c_str());
+    prg->initWithVertexShaderByteArray(getVertex().c_str(), frag.c_str());
     prg->addAttribute(kCCAttributeNamePosition, kCCVertexAttrib_Position);
     prg->addAttribute(kCCAttributeNameColor, kCCVertexAttrib_Color);
     prg->addAttribute(kCCAttributeNameTexCoord, kCCVertexAttrib_TexCoords);
@@ -28,6 +28,6 @@ void ShaderCache::createShader(std::string name, std::string frag) {
     prg->retain();
     prg->link();
     prg->updateUniforms();
-    ShaderCache::get()->add(name, prg);
+    add(name, prg);
 }
 
