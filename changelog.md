@@ -1,3 +1,9 @@
+# 1.0.8
+- Changes by [@hiimjustin000](https://github.com/hiimjustin000)
+    - MacOS support
+    - Separate Dual Icons support
+    - Fix reloading shaders (no more wonky icons on texture reload)
+
 # 1.0.7
 - I guess don't try anything, doing anything ever will crash on android
 

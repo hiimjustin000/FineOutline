@@ -1,4 +1,4 @@
-# Fine Outlines
+# Fine Outline
 
 ### Change the black outline color of icons! 
 
