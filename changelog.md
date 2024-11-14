@@ -1,3 +1,6 @@
+# 1.0.9
+- Fix a typo in the description
+
 # 1.0.8
 - Changes by [@hiimjustin000](https://github.com/hiimjustin000)
     - MacOS support
