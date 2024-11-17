@@ -322,7 +322,6 @@ class $modify(MyPlayLayer, PlayLayer) {
 class $modify(MyProfilePage, ProfilePage) {
 	struct Fields {
         SEL_MenuHandler m_playerToggle;
-        SEL_MenuHandler m_shipToggle;
     };
 
     void getUserInfoFinished(GJUserScore* p0) {
@@ -346,13 +345,6 @@ class $modify(MyProfilePage, ProfilePage) {
 			if (auto twoPToggler = static_cast<CCMenuItemSpriteExtra*>(m_mainLayer->getChildByID("left-menu")->getChildByID("2p-toggler"))) {
 				m_fields->m_playerToggle = twoPToggler->m_pfnSelector;
 				twoPToggler->m_pfnSelector = menu_selector(MyProfilePage::on2PToggle);
-			}
-
-			if (Loader::get()->isModLoaded("weebify.separate_dual_icons") && !Loader::get()->isModLoaded("rynat.better_unlock_info")) {
-				if (auto shipToggler = static_cast<CCMenuItemSpriteExtra*>(playerMenu->getChildByID("player-ship"))) {
-					m_fields->m_shipToggle = shipToggler->m_pfnSelector;
-					shipToggler->m_pfnSelector = menu_selector(MyProfilePage::onShipToggle);
-				}
 			}
 		}
 	}
@@ -385,19 +377,6 @@ class $modify(MyProfilePage, ProfilePage) {
 					if (SimplePlayer* player = innerNode->getChildByType<SimplePlayer>(0)) {
 						static_cast<MySimplePlayer*>(player)->updatePlayerShaders(dual);
 					}
-				}
-			}
-		}
-	}
-
-	void onShipToggle(CCObject* sender) {
-		(this->*m_fields->m_shipToggle)(sender);
-		if (m_ownProfile) {
-			CCNode* playerMenu = m_mainLayer->getChildByID("player-menu");
-			if (CCNode* shipNode = playerMenu->getChildByID("player-ship")) {
-				if (SimplePlayer* player = shipNode->getChildByType<SimplePlayer>(0)) {
-					auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-					static_cast<MySimplePlayer*>(player)->updatePlayerShaders(sdi && sdi->getSavedValue<bool>("2pselected"));
 				}
 			}
 		}
